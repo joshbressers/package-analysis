@@ -10,3 +10,6 @@ A project to mine npm packages for interesting data
 
 - One package
 - `curl https://registry.npmjs.org/express`
+
+The NPM versioning rules are here
+https://nodejs.dev/learn/semantic-versioning-using-npm/
