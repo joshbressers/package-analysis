@@ -9,7 +9,10 @@ import os
 with open("all_packages.json") as fh:
     data = json.load(fh)
 
-    for package_data in data['rows']:
+    all_packages = data['rows']
+    all_packages.reverse()
+
+    for package_data in all_packages:
 
         package_name = package_data['id']
         filename = "output/%s" % package_name
@@ -28,7 +31,7 @@ with open("all_packages.json") as fh:
             continue
 
         print(package_name)
-        resp = requests.get(url=url)
+        resp = requests.get(url=url, timeout=10)
         npm_data = resp.json()
 
         with gzip.GzipFile(filename, mode="w") as outfh:
