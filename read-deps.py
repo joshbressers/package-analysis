@@ -5,6 +5,7 @@ import os
 import gzip
 import json
 import regex
+import vulnerabilities
 from esbulkstream import Documents
 from pathlib import Path
 
@@ -15,6 +16,8 @@ version_re = regex.compile(r"\d+\.\d+\.\d+")
 es = Documents('npm-versions', mapping='')
 
 path = Path(file_dir)
+
+vulns = vulnerabilities.Vulnerabilities()
 
 for filename in path.rglob('*'):
 
@@ -130,7 +133,8 @@ for filename in path.rglob('*'):
                 "num_maintainers": num_maintainers,
                 "size": size,
                 "dependencies": dep_array,
-                "is_latest": is_latest
+                "is_latest": is_latest,
+                "vulnerabilities": vulns.match(package_name, package_version)
             }
 
             es.add(doc, doc_id)
