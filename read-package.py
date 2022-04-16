@@ -4,6 +4,7 @@ import sys
 import os
 import gzip
 import json
+import vulnerabilities
 from esbulkstream import Documents
 from pathlib import Path
 
@@ -13,6 +14,8 @@ es = Documents('npm-packages', mapping='')
 es_one = Documents('npm-one-package', mapping='')
 
 path = Path(file_dir)
+
+vulns = vulnerabilities.Vulnerabilities()
 
 for filename in path.rglob('*'):
 
@@ -52,7 +55,9 @@ for filename in path.rglob('*'):
             if one_data["versions"] > 2:
                 one_data["versions"] = one_data["versions"] - 2
 
-        es_one.add(one_data, one_id)
+        one_data["vulnerabilities"] = 0
+
+        all_vulns = []
 
         for ver in data["time"].keys():
 
@@ -72,10 +77,19 @@ for filename in path.rglob('*'):
             doc = {
                 "name": package_name,
                 "version": package_version,
-                "date": package_time
+                "date": package_time,
+                "vulnerabilities": vulns.match(package_name, package_version)
             }
 
+            one_data["vulnerabilities"] += len(doc["vulnerabilities"])
+            all_vulns.extend(doc["vulnerabilities"])
+
             es.add(doc, doc_id)
+
+
+        one_data["unique_vulnerabilities"] = len(set(all_vulns))
+        es_one.add(one_data, one_id)
+
 
 es.done()
 es_one.done()

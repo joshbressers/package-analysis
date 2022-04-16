@@ -133,6 +133,7 @@ for filename in path.rglob('*'):
                 "num_maintainers": num_maintainers,
                 "size": size,
                 "dependencies": dep_array,
+                "num_deps" : len(dep_array),
                 "is_latest": is_latest,
                 "vulnerabilities": vulns.match(package_name, package_version)
             }
