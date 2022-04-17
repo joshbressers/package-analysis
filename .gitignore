@@ -1,3 +1,8 @@
+output/
+all_packages.json
+downloads/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
