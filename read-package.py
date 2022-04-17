@@ -25,6 +25,20 @@ for filename in path.rglob('*'):
     one_id = str(filename).split('/', 1)[1]
     one_data = { "name": one_id }
 
+    if one_id.startswith('@'):
+        # This is a scoped package
+        one_data["scoped"] = True
+        (scope, name) = one_id.split('/')
+        one_data["scope"] = scope
+        one_data["scope_name"] = name
+
+    with open("downloads/%s" % one_id, mode="r") as fh:
+        data = json.loads(fh.read())
+        if data["package"] != one_id:
+            print("%s download data might be broken" % one_id)
+            sys.exit(1)
+        one_data["downloads"] = data["downloads"]
+
     with gzip.GzipFile(filename, mode="r") as fh:
         data = json.loads(fh.read())
 

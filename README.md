@@ -13,3 +13,7 @@ A project to mine npm packages for interesting data
 
 The NPM versioning rules are here
 https://nodejs.dev/learn/semantic-versioning-using-npm/
+
+To get downloads
+https://github.com/npm/registry/blob/master/docs/download-counts.md
+https://api.npmjs.org/downloads/point/last-year/@nebulare/tsconfig
