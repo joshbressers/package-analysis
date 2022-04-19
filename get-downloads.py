@@ -19,9 +19,12 @@ def get_data(package):
 
     global to_get
 
+    print(package)
+
     to_return = []
 
-    if package.startswith('@'):
+    #if package.startswith('@'):
+    if True:
         url = base_url + package
         resp = requests.get(url=url, timeout=10)
         dl_data = resp.json()
@@ -53,6 +56,11 @@ def get_data(package):
                         "downloads": -1,
                         "package": package
                     }
+                elif "error" in dl_data:
+                    dl_data = {
+                        "downloads": -1,
+                        "package": package
+                    }
                 else:
                     ret_data = dl_data[i]
 
@@ -71,8 +79,8 @@ for filename in path.rglob('*'):
     one_id = str(filename).split('/', 1)[1]
     the_file = "downloads/%s" % one_id
 
-    if one_id.startswith('@'):
-        continue
+    #if one_id.startswith('@'):
+    #    continue
 
     # Things that start with a @ are special in npm
     if one_id.startswith('@'):

@@ -8,18 +8,19 @@ import regex
 import vulnerabilities
 from esbulkstream import Documents
 from pathlib import Path
+from tqdm import tqdm
 
 file_dir = sys.argv[1]
 
 version_re = regex.compile(r"\d+\.\d+\.\d+")
 
-es = Documents('npm-versions', mapping='')
+es = Documents('npm-versions', mapping='', delete=True)
 
 path = Path(file_dir)
 
 vulns = vulnerabilities.Vulnerabilities()
 
-for filename in path.rglob('*'):
+for filename in tqdm(path.rglob('*'), total=1912321):
 
     if os.path.isdir(filename):
         continue
@@ -42,7 +43,7 @@ for filename in path.rglob('*'):
         if "latest" in data["dist-tags"]:
             latest_ver = data["dist-tags"]["latest"]
         else:
-            print("No latest %s" % filename)
+            #print("No latest %s" % filename)
             latest_ver = None
 
         for ver in data["versions"].keys():
@@ -65,15 +66,15 @@ for filename in path.rglob('*'):
 
             if "dependencies" in data["versions"][ver]:
                 if type(data["versions"][ver]["dependencies"]) is list:
-                    print("List: %s" % filename)
+                    #print("List: %s" % filename)
                     continue
 
                 if type(data["versions"][ver]["dependencies"]) is str:
-                    print("String: %s" % filename)
+                    #print("String: %s" % filename)
                     continue
 
                 if type(data["versions"][ver]["dependencies"]) is type(None):
-                    print("None: %s" % filename)
+                    #print("None: %s" % filename)
                     continue
 
 

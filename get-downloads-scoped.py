@@ -2,10 +2,12 @@
 
 import sys
 import os
+import signal
 import json
 from pathlib import Path
 import requests
 import threading, queue
+import time
 
 package_q = queue.Queue(maxsize=3000)
 results_q = queue.Queue(maxsize=3000)
@@ -31,7 +33,7 @@ def get_worker():
         except:
             # Lots of weird things happen when this times out in a thread,
             # this is the lazy solution
-            sys.exit(1)
+            os.kill(os.getpid(), signal.SIGINT)
 
         dl_data = resp.json()
 
@@ -96,7 +98,9 @@ for filename in path.rglob('*'):
     package_q.put(one_id)
 
 while not package_q.empty():
+    print("Waiting on package queue")
     time.sleep(1)
 
 while not results_q.empty():
+    print("Waiting on results queue")
     time.sleep(1)

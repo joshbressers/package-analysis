@@ -7,17 +7,18 @@ import json
 import vulnerabilities
 from esbulkstream import Documents
 from pathlib import Path
+from tqdm import tqdm
 
 file_dir = sys.argv[1]
 
-es = Documents('npm-packages', mapping='')
-es_one = Documents('npm-one-package', mapping='')
+es = Documents('npm-packages', mapping='', delete=True)
+es_one = Documents('npm-one-package', mapping='', delete=True)
 
 path = Path(file_dir)
 
 vulns = vulnerabilities.Vulnerabilities()
 
-for filename in path.rglob('*'):
+for filename in tqdm(path.rglob('*'), total=1912321):
 
     if os.path.isdir(filename):
         continue
@@ -33,7 +34,11 @@ for filename in path.rglob('*'):
         one_data["scope_name"] = name
 
     with open("downloads/%s" % one_id, mode="r") as fh:
-        data = json.loads(fh.read())
+        try:
+            data = json.loads(fh.read())
+        except:
+            print("Failed to read downloads/%s" % one_id)
+            sys.exit(1)
         if data["package"] != one_id:
             print("%s download data might be broken" % one_id)
             sys.exit(1)
@@ -46,12 +51,12 @@ for filename in path.rglob('*'):
             one_data["security_holding"] = True
 
         if "name" not in data:
-            print("No name %s" % filename)
+            #print("No name %s" % filename)
             one_data["withdrawn"] = True
             es_one.add(one_data, one_id)
             continue
         if "time" not in data:
-            print("No time %s" % filename)
+            #print("No time %s" % filename)
             one_data["no_time"] = True
             es_one.add(one_data, one_id)
             continue
