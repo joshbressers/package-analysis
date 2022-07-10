@@ -20,10 +20,23 @@ path = Path(file_dir)
 
 vulns = vulnerabilities.Vulnerabilities()
 
-for filename in tqdm(path.rglob('*'), total=1912321):
+for filename in tqdm(path.rglob('*'), total=2051423):
 
     if os.path.isdir(filename):
         continue
+
+    one_id = str(filename).split('/', 1)[1]
+    downloads = 0
+    with open("downloads/%s" % one_id, mode="r") as fh:
+        try:
+            data = json.loads(fh.read())
+        except:
+            print("Failed to read downloads/%s" % one_id)
+            sys.exit(1)
+        if data["package"] != one_id:
+            print("%s download data might be broken" % one_id)
+            sys.exit(1)
+        downloads = data["downloads"]
 
     with gzip.GzipFile(filename, mode="r") as fh:
         data = json.loads(fh.read())
@@ -53,6 +66,19 @@ for filename in tqdm(path.rglob('*'), total=1912321):
                 is_latest = True
 
             dep_array = []
+
+            maintainers = []
+            maintainers_email = []
+            maintainer_domain = []
+            if "maintainers" in data["versions"][ver]:
+                for m in data["versions"][ver]["maintainers"]:
+                    if type(m) is dict:
+                        if "email" in m:
+                            maintainers_email.append(m["email"])
+                            if len(m["email"].split('@')) == 2:
+                                maintainer_domain.append(m["email"].split('@')[1])
+                        if "name" in m:
+                            maintainers.append(m["name"])
 
             package_version = ver
 
@@ -119,6 +145,9 @@ for filename in tqdm(path.rglob('*'), total=1912321):
                     if ">=" in dep_ver:
                         dep_ops.append(">=")
 
+                    if len(dep_ops) == 0:
+                        dep_ops.append("none")
+
                     dep_data = {
                         "dep_name" : dep_name,
                         "dep_ops"  : dep_ops
@@ -132,10 +161,14 @@ for filename in tqdm(path.rglob('*'), total=1912321):
                 "name": package_name,
                 "version": package_version,
                 "num_maintainers": num_maintainers,
+                "maintainers": maintainers,
+                "maintainers_email": maintainers_email,
+                "maintainer_domain": maintainer_domain,
                 "size": size,
                 "dependencies": dep_array,
                 "num_deps" : len(dep_array),
                 "is_latest": is_latest,
+                "downloads" : downloads,
                 "vulnerabilities": vulns.match(package_name, package_version)
             }
 
