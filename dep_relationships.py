@@ -2,7 +2,6 @@
 
 import sys
 import os
-import gzip
 import json
 import regex
 import vulnerabilities
@@ -29,7 +28,7 @@ def get_deps(file_dir):
         if os.path.isdir(filename):
             continue
 
-        with gzip.GzipFile(filename, mode="r") as fh:
+        with open(filename, mode="r") as fh:
             data = json.loads(fh.read())
 
             if "name" not in data:
@@ -93,7 +92,7 @@ def get_vers(file_dir):
         if os.path.isdir(filename):
             continue
 
-        with gzip.GzipFile(filename, mode="r") as fh:
+        with open(filename, mode="r") as fh:
             data = json.loads(fh.read())
 
             if "name" not in data:

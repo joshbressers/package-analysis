@@ -2,7 +2,6 @@
 
 import sys
 import os
-import gzip
 import json
 import vulnerabilities
 from esbulkstream import Documents
@@ -33,7 +32,9 @@ path = Path(file_dir)
 
 vulns = vulnerabilities.Vulnerabilities()
 
-for filename in tqdm(path.rglob('*'), total=2051423):
+progress_bar = tqdm(total=2174520)
+for filename in path.rglob('*'):
+    progress_bar.update()
 
     if os.path.isdir(filename):
         continue
@@ -55,14 +56,16 @@ for filename in tqdm(path.rglob('*'), total=2051423):
         try:
             data = json.loads(fh.read())
         except:
+            progress_bar.close()
             print("Failed to read downloads/%s" % one_id)
             sys.exit(1)
         if data["package"] != one_id:
+            progress_bar.close()
             print("%s download data might be broken" % one_id)
             sys.exit(1)
         one_data["downloads"] = data["downloads"]
 
-    with gzip.GzipFile(filename, mode="r") as fh:
+    with open(filename, mode="r") as fh:
         data = json.loads(fh.read())
 
         data["downloads"] = one_data["downloads"]
@@ -131,6 +134,7 @@ for filename in tqdm(path.rglob('*'), total=2051423):
                             elif "license" in data["versions"][ver]["licenses"]:
                                 current_licenses.append(retstr(data["versions"][ver]["licenses"]["license"]))
                             else:
+                                progress_bar.close()
                                 print("\n\n*** type missing")
                                 print(data["versions"][ver]["licenses"])
                                 print("***\n\n")
@@ -178,6 +182,7 @@ for filename in tqdm(path.rglob('*'), total=2051423):
                                         print("***\n\n")
                                         raise Exception("Something weird happened")
                         else:
+                            progress_bar.close()
                             print("\n\n*** licenses else")
                             print(data["versions"][ver]["licenses"])
                             print("\n\n***")
@@ -214,6 +219,7 @@ for filename in tqdm(path.rglob('*'), total=2051423):
                             elif "url" in data["versions"][ver]["license"]:
                                 next
                             else:
+                                progress_bar.close()
                                 print("\n\n*** dict type")
                                 print(data["versions"][ver]["license"])
                                 print("\n\n***")
@@ -231,6 +237,7 @@ for filename in tqdm(path.rglob('*'), total=2051423):
                                         elif "type" in l:
                                             current_licenses.append(retstr(l["type"]))
                                     except:
+                                        progress_bar.close()
                                         print("\n\n*** l name")
                                         print(l)
                                         print("\n\n***")
@@ -239,6 +246,7 @@ for filename in tqdm(path.rglob('*'), total=2051423):
                                     try:
                                         current_licenses.append(retstr(l["type"]))
                                     except:
+                                        progress_bar.close()
                                         print("\n\n*** l tpe")
                                         print(type(l))
                                         print(l)
@@ -249,6 +257,7 @@ for filename in tqdm(path.rglob('*'), total=2051423):
                         elif type(data["versions"][ver]["license"]) is bool:
                             next
                         else:
+                            progress_bar.close()
                             print("\n\n*** license")
                             print(data["versions"][ver]["license"])
                             print(type(data["versions"][ver]["license"]))

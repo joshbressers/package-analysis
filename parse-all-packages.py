@@ -5,6 +5,7 @@ import requests
 import gzip
 import time
 import os
+from tqdm import tqdm
 
 with open("all_packages.json") as fh:
     data = json.load(fh)
@@ -12,7 +13,9 @@ with open("all_packages.json") as fh:
     all_packages = data['rows']
     all_packages.reverse()
 
-    for package_data in all_packages:
+    # give the status bar some room
+    print("\n\n\n")
+    for package_data in tqdm(all_packages, miniters=1):
 
         package_name = package_data['id']
         filename = "output/%s" % package_name
@@ -30,10 +33,10 @@ with open("all_packages.json") as fh:
         if os.path.exists(filename):
             continue
 
-        print(package_name)
-        resp = requests.get(url=url, timeout=10)
+        #print(package_name)
+        resp = requests.get(url=url, timeout=30)
         npm_data = resp.json()
 
-        with gzip.GzipFile(filename, mode="w") as outfh:
-            outfh.write(str.encode(json.dumps(npm_data)))
+        with open(filename, mode="w") as outfh:
+            outfh.write(json.dumps(npm_data))
 

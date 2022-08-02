@@ -12,9 +12,6 @@ import time
 package_q = queue.Queue(maxsize=3000)
 results_q = queue.Queue(maxsize=3000)
 
-file_dir = sys.argv[1]
-
-path = Path(file_dir)
 base_url = "https://api.npmjs.org/downloads/point/last-year/"
 
 to_get = []
@@ -71,12 +68,14 @@ threading.Thread(target=get_worker, daemon=True).start()
 threading.Thread(target=get_worker, daemon=True).start()
 threading.Thread(target=get_worker, daemon=True).start()
 
-for filename in path.rglob('*'):
+with open("all_packages.json") as fh:
+    data = json.load(fh)
 
-    if os.path.isdir(filename):
-        continue
+    all_packages = data['rows']
 
-    one_id = str(filename).split('/', 1)[1]
+for filename in all_packages:
+
+    one_id = filename["id"]
     the_file = "downloads/%s" % one_id
 
     # We only want scoped things
