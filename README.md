@@ -3,11 +3,16 @@ A project to mine npm packages for interesting data
 
 # Interesting notes
 
+## First you have to collect a list of all packages. We do this with curl
 - All packages
-- `curl https://skimdb.npmjs.com/registry/_all_docs`
+- `curl -o all_packages.json https://skimdb.npmjs.com/registry/_all_docs`
 - To continue
-- `curl 'https://skimdb.npmjs.com/registry/_all_docs?startkey="@openfonts/baloo-da_vietnamese"'`
+- `curl -o all_packages.json 'https://skimdb.npmjs.com/registry/_all_docs?startkey="@openfonts/baloo-da_vietnamese"'`
 
+## Then we run
+
+
+# Other notes
 - One package
 - `curl https://registry.npmjs.org/express`
 
