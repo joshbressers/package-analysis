@@ -2,17 +2,13 @@
 
 import sys
 import os
-import gzip
 import json
 import regex
 import vulnerabilities
 from esbulkstream import Documents
 from pathlib import Path
 from tqdm import tqdm
-
-from packaging.version import parse as parse_version
-from packaging.version import Version
-from packaging.version import LegacyVersion
+from version_parser import Version
 
 def get_deps(file_dir):
 
@@ -29,7 +25,7 @@ def get_deps(file_dir):
         if os.path.isdir(filename):
             continue
 
-        with gzip.GzipFile(filename, mode="r") as fh:
+        with open(filename, mode="r") as fh:
             data = json.loads(fh.read())
 
             if "name" not in data:
@@ -93,7 +89,7 @@ def get_vers(file_dir):
         if os.path.isdir(filename):
             continue
 
-        with gzip.GzipFile(filename, mode="r") as fh:
+        with open(filename, mode="r") as fh:
             data = json.loads(fh.read())
 
             if "name" not in data:
@@ -117,17 +113,17 @@ def get_vers(file_dir):
                 elif ver == "created":
                     continue
 
-                one_ver = parse_version(ver)
+                one_ver = Version(ver)
 
                 # Skip weird versions
-                if type(one_ver) is LegacyVersion:
-                    continue
+                #if type(one_ver) is LegacyVersion:
+                #    continue
 
                 the_time = data["time"][ver]
 
-                major = one_ver.major
-                minor = one_ver.minor
-                micro = one_ver.micro
+                major = one_ver.get_major_version()
+                minor = one_ver.get_minor_version()
+                micro = one_ver.get_micro_version()
 
                 if not major in the_vers[package_name]:
                     the_vers[package_name][major] = {}

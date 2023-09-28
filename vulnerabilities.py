@@ -5,7 +5,7 @@ import requests
 from io import BytesIO
 from typing import Any, List, Mapping
 from zipfile import ZipFile
-from packaging.version import parse as parse_version
+from version_parser import Version
 
 def get_packages_to_vulns() -> Mapping[str, Any]:
     npm_zip = ZipFile(BytesIO(requests.get('https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip').content))
@@ -36,7 +36,12 @@ class Vulnerabilities:
             return []
 
         vulns = []
-        parsed_package_version = parse_version(package_version)
+
+        try:
+            parsed_package_version = Version(package_version)
+        except:
+            # Skip weird versions, they won't match any vulns anyway
+            return []
 
         for vuln in self.packages_to_vulns[package_name]:
             for affected in vuln["affected"]:
@@ -51,18 +56,22 @@ class Vulnerabilities:
 
                     matched = False
 
-                    for event in r.get("events", []):
-                        if event.get("introduced") and parsed_package_version >= parse_version(event.get("introduced")):
-                            matched = True
-                            continue
+                    try:
+                        for event in r.get("events", []):
+                            if event.get("introduced") and parsed_package_version >= Version(event.get("introduced")):
+                                matched = True
+                                continue
 
-                        if matched and event.get("fixed") and parsed_package_version < parse_version(event.get("fixed")):
+                            if matched and event.get("fixed") and parsed_package_version < Version(event.get("fixed")):
+                                break
+                            else:
+                                matched = False
+
+                        if matched:
+                            vulns.append(vuln["id"])
                             break
-                        else:
-                            matched = False
-
-                    if matched:
-                        vulns.append(vuln["id"])
+                    except:
+                        # Sometimes version things fail
                         break
 
         return vulns

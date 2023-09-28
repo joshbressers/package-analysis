@@ -8,13 +8,11 @@ from pathlib import Path
 import requests
 import threading, queue
 import time
+from tqdm import tqdm
 
-package_q = queue.Queue(maxsize=3000)
-results_q = queue.Queue(maxsize=3000)
+package_q = queue.Queue(maxsize=500)
+results_q = queue.Queue(maxsize=500)
 
-file_dir = sys.argv[1]
-
-path = Path(file_dir)
 base_url = "https://api.npmjs.org/downloads/point/last-year/"
 
 to_get = []
@@ -58,7 +56,7 @@ def put_worker():
         with open(the_file, "w") as fh:
             fh.write(json.dumps(result))
 
-        print(the_file)
+        #print(the_file)
 
         results_q.task_done()
 
@@ -70,13 +68,20 @@ threading.Thread(target=get_worker, daemon=True).start()
 threading.Thread(target=get_worker, daemon=True).start()
 threading.Thread(target=get_worker, daemon=True).start()
 threading.Thread(target=get_worker, daemon=True).start()
+threading.Thread(target=get_worker, daemon=True).start()
+threading.Thread(target=get_worker, daemon=True).start()
+threading.Thread(target=get_worker, daemon=True).start()
+threading.Thread(target=get_worker, daemon=True).start()
 
-for filename in path.rglob('*'):
+with open("all_packages.json") as fh:
+    data = json.load(fh)
 
-    if os.path.isdir(filename):
-        continue
+    all_packages = data['rows']
 
-    one_id = str(filename).split('/', 1)[1]
+#for filename in tqdm(all_packages, miniters=1):
+for filename in all_packages:
+
+    one_id = filename["id"]
     the_file = "downloads/%s" % one_id
 
     # We only want scoped things
@@ -95,6 +100,7 @@ for filename in path.rglob('*'):
     if os.path.exists(the_file):
         continue
 
+    print(one_id)
     package_q.put(one_id)
 
 while not package_q.empty():

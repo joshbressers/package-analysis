@@ -6,9 +6,6 @@ import json
 from pathlib import Path
 import requests
 
-file_dir = sys.argv[1]
-
-path = Path(file_dir)
 base_url = "https://api.npmjs.org/downloads/point/last-year/"
 
 to_get = []
@@ -23,68 +20,75 @@ def get_data(package):
 
     to_return = []
 
+    # Skip the scoped packages
     #if package.startswith('@'):
+    #    return
+    #else:
     if True:
-        url = base_url + package
-        resp = requests.get(url=url, timeout=10)
-        dl_data = resp.json()
-
-        if "error" in dl_data:
-            dl_data = {
-                "downloads": -1,
-                "package": package
-            }
-
-        to_return.append(dl_data)
-
-    else:
         to_get.append(package)
 
-        #if len(to_get) > 100:
-        if len(to_get) > 1:
+        if len(to_get) > 100:
+        #if len(to_get) > 0:
 
             url = base_url + ','.join(to_get)
             resp = requests.get(url=url, timeout=10)
             dl_data = resp.json()
 
-            for i in dl_data.keys():
-
+            # If we only requested one thing, it's a very different result
+            if len(to_get) == 1:
                 ret_data = None
 
-                if dl_data[i] is None:
+                if "error" in dl_data:
                     ret_data = {
                         "downloads": -1,
                         "package": package
                     }
-                elif "error" in dl_data:
-                    dl_data = {
-                        "downloads": -1,
-                        "package": package
-                    }
                 else:
-                    ret_data = dl_data[i]
+                    ret_data = dl_data
 
-                to_return.append(ret_data)
+                    to_return.append(ret_data)
+
+            # We requested multiple things
+            else:
+
+                for i in dl_data.keys():
+
+                    ret_data = None
+
+                    if dl_data[i] is None:
+                        ret_data = {
+                            "downloads": -1,
+                            "package": i
+                        }
+                    elif f"package {package} not found" in dl_data[i]:
+                        ret_data = {
+                            "downloads": -1,
+                            "package": package
+                        }
+                    else:
+                        ret_data = dl_data[i]
+
+                    to_return.append(ret_data)
 
             # Don't forget to clear to_get
             to_get = []
 
     return to_return
 
-for filename in path.rglob('*'):
 
-    if os.path.isdir(filename):
-        continue
+with open("all_packages.json") as fh:
+    data = json.load(fh)
 
-    one_id = str(filename).split('/', 1)[1]
-    the_file = "downloads/%s" % one_id
+    all_packages = data['rows']
 
-    #if one_id.startswith('@'):
-    #    continue
+for filename in all_packages:
+
+    package_name = filename["id"]
+    the_file = "downloads/%s" % package_name
 
     # Things that start with a @ are special in npm
-    if one_id.startswith('@'):
-        (the_dir, the_package) = one_id.split('/')
+    if package_name.startswith('@'):
+        (the_dir, the_package) = package_name.split('/')
         if os.path.exists("downloads/%s" % the_dir):
             # We're fine
             pass
@@ -94,9 +98,9 @@ for filename in path.rglob('*'):
     if os.path.exists(the_file):
         continue
 
-    if one_id.startswith('@'):
-        print(one_id)
-    the_data = get_data(one_id)
+    if package_name.startswith('@'):
+        print(package_name)
+    the_data = get_data(package_name)
 
     if len(the_data) > 0:
 

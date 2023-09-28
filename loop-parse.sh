@@ -2,6 +2,6 @@
 
 while true;
 do
-	./parse-packages.py
-	sleep 30
+	./parse-all-packages.py
+	sleep 60
 done

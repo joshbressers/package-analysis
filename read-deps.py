@@ -2,7 +2,6 @@
 
 import sys
 import os
-import gzip
 import json
 import regex
 import vulnerabilities
@@ -20,25 +19,34 @@ path = Path(file_dir)
 
 vulns = vulnerabilities.Vulnerabilities()
 
-for filename in tqdm(path.rglob('*'), total=2051423):
+progress_bar = tqdm(total=2174520)
+for filename in path.rglob('*'):
+    progress_bar.update()
 
     if os.path.isdir(filename):
         continue
 
     one_id = str(filename).split('/', 1)[1]
     downloads = 0
+
+    # Sometimes things don't exist, that's OK
+    if not os.path.exists("downloads/%s" % one_id):
+        continue
+
     with open("downloads/%s" % one_id, mode="r") as fh:
         try:
             data = json.loads(fh.read())
         except:
-            print("Failed to read downloads/%s" % one_id)
+            progress_bar.close()
+            print("\n*** Failed to read downloads/%s\n" % one_id)
             sys.exit(1)
         if data["package"] != one_id:
-            print("%s download data might be broken" % one_id)
+            progress_bar.close()
+            print("\n*** %s download data might be broken\n" % one_id)
             sys.exit(1)
         downloads = data["downloads"]
 
-    with gzip.GzipFile(filename, mode="r") as fh:
+    with open(filename, mode="r") as fh:
         data = json.loads(fh.read())
 
         if "name" not in data:
