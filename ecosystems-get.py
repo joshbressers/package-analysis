@@ -89,6 +89,7 @@ def rest_worker():
                 my_data["downloads"] = p["downloads"]
                 my_data["downloads_period"] = p["downloads_period"]
                 my_data["maintainers"] = p["maintainers"]
+                my_data["num_maintainers"] = len(p["maintainers"])
 
                 package_output_q.put(my_data)
 
