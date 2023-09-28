@@ -7,6 +7,7 @@ from esbulkstream import Documents
 from tqdm import tqdm
 import threading, queue
 import time
+import logging
 
 
 # Setup URL things
@@ -50,7 +51,7 @@ def version_worker():
 
         except:
             # If something bad happens, just put the page back in the queue
-            print("Something bad happened")
+            logging.warning("Version: Something bad happened")
             version_q.put(package)
         else:
             for p in my_data:
@@ -93,6 +94,7 @@ def rest_worker():
 
         except:
             # If something bad happens, just put the page back in the queue
+            logging.warn("Version: Something bad happened")
             page_q.put(page)
 
         page_q.task_done()
