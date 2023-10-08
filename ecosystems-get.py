@@ -18,7 +18,7 @@ class Registry:
 
         # Setup http session
         self.session = requests.Session()
-        retries = Retry(total=25,
+        retries = Retry(total=10,
                         backoff_factor=0.1,
                         status_forcelist=[ 500, 502, 503, 504 ])
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
@@ -39,14 +39,14 @@ class Registry:
 
 
 # Setup URL things
-package_url = "https://packages.ecosyste.ms/api/v1/registries/%s/packages?page=%d&per_page=100&sort=name"
+package_url = "https://packages.ecosyste.ms/api/v1/registries/%s/packages?page=%d&per_page=100"
 version_url = "https://packages.ecosyste.ms/api/v1/registries/%s/packages/%s/versions?page=1&per_page=100"
 
 
 page_q = queue.Queue()
-package_output_q = queue.Queue(maxsize=3000)
-version_output_q = queue.Queue(maxsize=3000)
-version_q = queue.Queue(maxsize=3000)
+package_output_q = queue.Queue(maxsize=1000)
+version_output_q = queue.Queue(maxsize=1000)
+version_q = queue.Queue(maxsize=1000)
 
 package_es = Documents('ecosystems-package', mapping='', delete=False)
 versions_es = Documents('ecosystems-versions', mapping='', delete=False)
@@ -54,7 +54,7 @@ versions_es = Documents('ecosystems-versions', mapping='', delete=False)
 def version_worker(repo):
     # Setup http session
     s = requests.Session()
-    retries = Retry(total=25,
+    retries = Retry(total=10,
                     backoff_factor=0.1,
                     status_forcelist=[ 500, 502, 503, 504 ])
     s.mount('https://', HTTPAdapter(max_retries=retries))
@@ -94,22 +94,19 @@ def version_worker(repo):
 def package_worker(repo):
     # Setup http session
     s = requests.Session()
-#    retries = Retry(total=500,
-#                    backoff_factor=0.1,
-#                    status_forcelist=[ 500, 502, 503, 504 ])
-#    s.mount('https://', HTTPAdapter(max_retries=retries))
+    retries = Retry(total=5,
+                    backoff_factor=0.1,
+                    status_forcelist=[ 500, 502, 503, 504 ])
+    s.mount('https://', HTTPAdapter(max_retries=retries))
 
     while True:
-        page = page_q.get()
-
-        new_url = package_url % (repo, page)
         try:
+            page = page_q.get()
+            new_url = package_url % (repo, page)
             resp = s.get(url=new_url)
             package_json = resp.json()
 
-
             for p in package_json:
-
                 version_q.put(p["name"])
 
                 p["repo"] = repo
@@ -120,6 +117,7 @@ def package_worker(repo):
         except:
             # If something bad happens, just put the page back in the queue
             logging.warn("Package: Something bad happened")
+            logging.warn("URL: %s" % new_url)
             page_q.put(page)
 
         page_q.task_done()
@@ -128,14 +126,24 @@ def package_output_worker():
     while True:
         result = package_output_q.get()
         doc_id = "%s-%s" % (result["repo"], result["name"])
-        package_es.add(result, doc_id)
+        error = None
+        try:
+            error = package_es.add(result, doc_id)
+        except Exception as e:
+            logging.warn("Package Output: Something bad happened")
+            logging.warn(e)
+            logging.warn(error)
         package_output_q.task_done()
 
 def version_output_worker():
     while True:
         result = version_output_q.get()
         doc_id = "%s-%s-%s" % (result["repo"], result["name"], result["number"])
-        versions_es.add(result, doc_id)
+        try:
+            versions_es.add(result, doc_id)
+        except Exception as e:
+            logging.warn("Version Output: Something bad happened")
+            logging.warn(e)
         version_output_q.task_done()
 
 def main():
@@ -145,6 +153,8 @@ def main():
         sys.exit(1)
 
     repo_name = sys.argv[1]
+
+    print("Loading %s" % repo_name)
 
     my_repo = Registry(repo_name)
     total_pages = my_repo.get_num_pages()
@@ -157,7 +167,7 @@ def main():
 
     for i in range(15):
         threading.Thread(target=version_worker, args=(repo_name,), daemon=True).start()
-    for i in range(2):
+    for i in range(10):
         threading.Thread(target=package_worker, args=(repo_name,), daemon=True).start()
 
     progress = tqdm(total=total_pages)
@@ -177,6 +187,8 @@ def main():
 
     package_es.done()
     versions_es.done()
+
+    print("Done Loading %s\n\n" % repo_name)
 
 if __name__ == "__main__":
     main()
