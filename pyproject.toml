@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "package-analysis"
+version = "0.1.0"
+description = ""
+authors = ["Josh Bressers <josh@bress.net>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.31.0"
+
+[tool.poetry.scripts]
+pa-repos = "package_analysis.entry:repos"
+pa-packages = "package_analysis.entry:packages"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
