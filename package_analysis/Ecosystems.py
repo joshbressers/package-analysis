@@ -36,7 +36,7 @@ class EcosystemsSession:
         self.__page_items = int(self.__response.headers['page-items'])
         self.__data = self.__response.json()
 
-        if "last" in self.__response.links:
+        if "next" not in self.__response.links:
             # We're on the last page
             self.__last = True
 
@@ -44,9 +44,6 @@ class EcosystemsSession:
         if not self.__last:
             self.__url = self.__response.links["next"]["url"]
             self.get_url()
-
-    def get_data(self):
-        return self.__response.json()
 
     def __iter__(self):
         self.n = 0
@@ -75,6 +72,9 @@ class Registry:
         for i in fields:
             self.__dict__[i] = data[i]
 
+    def __getitem__(self, item):
+        return self.__dict__[item]
+
 def get_registries():
     registry_url = "https://packages.ecosyste.ms/api/v1/registries"
     session = EcosystemsSession(registry_url)
@@ -86,12 +86,34 @@ def get_registries():
 
     return registries
 
+class Packages:
 
-def get_packages(registry="pypi.org"):
+    def __init__(self, session, registry):
+        self.__session = session
+        self.__registry = registry
+        self.__count = 0
+
+        for r in get_registries():
+            if r["name"] == registry:
+                self.__count = int(r["packages_count"])
+
+        self.__session_iter = iter(self.__session)
+
+    def get_count(self):
+        return self.__count
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        package_data = next(self.__session_iter)
+        package_data["repo"] = self.__registry
+        package_data["num_maintainers"] = len(package_data["maintainers"])
+        return package_data
+
+def get_packages(registry):
 
     registry_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages?per_page=100"
     session = EcosystemsSession(registry_url)
 
-    for i in session:
-        print(i)
-
+    return Packages(session, registry)

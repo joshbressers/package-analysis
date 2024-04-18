@@ -8,6 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 requests = "^2.31.0"
+esbulkstream = {git = "https://github.com/joshbressers/es-bulk-stream.git"}
+tqdm = "^4.66.2"
 
 [tool.poetry.scripts]
 pa-repos = "package_analysis.entry:repos"
