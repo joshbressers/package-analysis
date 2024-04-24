@@ -1,6 +1,7 @@
 
 
 import requests
+import urllib.parse
 from requests.adapters import HTTPAdapter, Retry
 
 class EcosystemsSession:
@@ -109,11 +110,45 @@ class Packages:
         package_data = next(self.__session_iter)
         package_data["repo"] = self.__registry
         package_data["num_maintainers"] = len(package_data["maintainers"])
+
+
+        # Remove some large fields
+        if "metadata" in package_data: del(package_data["metadata"])
+        if "repo_metadata" in package_data: del(package_data["repo_metadata"])
+        if "fields" in package_data: del(package_data["fields"])
+
         return package_data
 
-def get_packages(registry):
+class Versions:
 
-    registry_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages?per_page=100"
+    def __init__(self, session, name, registry):
+        self.__session = session
+        self.__registry = registry
+        self.__name = name
+
+        self.__session_iter = iter(self.__session)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        package_data = next(self.__session_iter)
+        package_data["repo"] = self.__registry
+        package_data["name"] = self.__name
+        return package_data
+
+def get_versions(package, registry):
+    versions_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages/{package}/versions?per_page=100"
+    session = EcosystemsSession(versions_url)
+
+    return Versions(session, package, registry)
+
+def get_packages(registry, latest_date = "1979-01-01"):
+
+    latest_date = urllib.parse.quote(latest_date)
+    registry_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages?updated_after={latest_date}&per_page=100&sort=updated_at&order=asc"
+
+    print(registry_url)
     session = EcosystemsSession(registry_url)
 
     return Packages(session, registry)
