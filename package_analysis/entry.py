@@ -7,11 +7,16 @@ import threading, queue
 import time
 from tabulate import tabulate
 
-version_q = queue.Queue(maxsize=1000)
+# Entry points for poetry to call into
+
 es = package_analysis.Elasticsearch.PackageAnalysisES()
+version_q = queue.Queue(maxsize=1000)
 lock = threading.Lock()
 
-def repos():
+def cmd_repos():
+    """
+    List all the repos that are currently seen in Ecosyste.ms
+    """
     repos = package_analysis.Ecosystems.get_registries()
 
     table_data = []
@@ -22,7 +27,11 @@ def repos():
     print(tabulate(table_data, headers=["Repo", "Count"]))
 
 
-def latest():
+def cmd_latest():
+    """
+    Print the latest pcakge date stored in Elasticsearch for a given registry
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument("registry", type=str,
         help="The registry to show the latest package date")
@@ -32,7 +41,12 @@ def latest():
     date = es.get_latest_package(registry)
     print(date)
 
-def packages():
+def cmd_packages():
+    """
+    Load the packages for a given repo
+
+    By default the latest date found is used at the starting point
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("registry", type=str,
         help="The registry to load packages from")
@@ -44,7 +58,7 @@ def packages():
     registry = args.registry
     load_packages(registry)
 
-def all_packages():
+def cmd_all_packages():
     "Loop over all registries and load the packages"
 
     for i in range(20):
@@ -58,6 +72,13 @@ def all_packages():
         load_packages(registry)
 
 def load_packages(registry):
+    """
+    Load the packages from a given registry
+
+    we start at the latest date.
+
+    TODO: Start at 1970-01-01 to load them all
+    """
 
     latest_date = es.get_latest_package(registry)
     packages = package_analysis.Ecosystems.get_packages(registry, latest_date)
@@ -80,6 +101,9 @@ def load_packages(registry):
     es.done()
 
 def version_worker():
+    """
+    This is the thread worker
+    """
 
     while True:
 

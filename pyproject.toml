@@ -13,10 +13,10 @@ tqdm = "^4.66.2"
 tabulate = "^0.9.0"
 
 [tool.poetry.scripts]
-pa-repos = "package_analysis.entry:repos"
-pa-packages = "package_analysis.entry:packages"
-pa-latest = "package_analysis.entry:latest"
-pa-all = "package_analysis.entry:all_packages"
+pa-repos = "package_analysis.entry:cmd_repos"
+pa-packages = "package_analysis.entry:cmd_packages"
+pa-latest = "package_analysis.entry:cmd_latest"
+pa-all = "package_analysis.entry:cmd_all_packages"
 
 [build-system]
 requires = ["poetry-core"]
