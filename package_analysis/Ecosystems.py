@@ -9,7 +9,6 @@ class EcosystemsSession:
     def __init__(self, url):
         self.__response = None
         self.__url = url
-        self.__current_page = 0
         self.__page_items = 0
         self.__total_pages = 0
         self.__total_count = 0
@@ -33,7 +32,6 @@ class EcosystemsSession:
     def get_url(self):
         self.__response = self.session.get(url=self.__url)
 
-        self.__current_page = int(self.__response.headers['current-page'])
         self.__page_items = int(self.__response.headers['page-items'])
         self.__data = self.__response.json()
 
@@ -148,7 +146,6 @@ def get_packages(registry, latest_date = "1979-01-01"):
     latest_date = urllib.parse.quote(latest_date)
     registry_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages?updated_after={latest_date}&per_page=100&sort=updated_at&order=asc"
 
-    print(registry_url)
     session = EcosystemsSession(registry_url)
 
     return Packages(session, registry)

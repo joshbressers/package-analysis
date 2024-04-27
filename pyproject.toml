@@ -16,6 +16,7 @@ tabulate = "^0.9.0"
 pa-repos = "package_analysis.entry:repos"
 pa-packages = "package_analysis.entry:packages"
 pa-latest = "package_analysis.entry:latest"
+pa-all = "package_analysis.entry:all_packages"
 
 [build-system]
 requires = ["poetry-core"]
