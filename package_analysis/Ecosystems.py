@@ -3,8 +3,19 @@
 import requests
 import urllib.parse
 from requests.adapters import HTTPAdapter, Retry
+from typing import List
+
 
 class EcosystemsSession:
+    __response: requests.Response
+    __url: str
+    __page_items: int
+    __total_pages: int
+    __total_count: int
+    __data: List
+    __last: str
+    __first: str
+    n: int
 
     def __init__(self, url):
         self.__response = None
@@ -15,6 +26,7 @@ class EcosystemsSession:
         self.__data = []
         self.__last = False
         self.__first = None
+        self.n = 0
 
         # Setup http session
         self.session = requests.Session()
@@ -26,10 +38,10 @@ class EcosystemsSession:
         self.get_url()
         self.__first = self.__response.links["first"]["url"]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.__total_count
 
-    def get_url(self):
+    def get_url(self) -> None:
         self.__response = self.session.get(url=self.__url)
 
         self.__page_items = int(self.__response.headers['page-items'])
@@ -39,7 +51,7 @@ class EcosystemsSession:
             # We're on the last page
             self.__last = True
 
-    def get_next(self):
+    def get_next(self) -> None:
         if not self.__last:
             self.__url = self.__response.links["next"]["url"]
             self.get_url()
@@ -74,7 +86,7 @@ class Registry:
     def __getitem__(self, item):
         return self.__dict__[item]
 
-def get_registries():
+def get_registries() -> List[Registry]:
     registry_url = "https://packages.ecosyste.ms/api/v1/registries"
     session = EcosystemsSession(registry_url)
 
@@ -86,6 +98,9 @@ def get_registries():
     return registries
 
 class Packages:
+    __session: requests.Session
+    __registry: Registry
+    __count: int
 
     def __init__(self, session, registry):
         self.__session = session
@@ -98,7 +113,7 @@ class Packages:
 
         self.__session_iter = iter(self.__session)
 
-    def get_count(self):
+    def get_count(self) -> int:
         return self.__count
 
     def __iter__(self):
@@ -135,13 +150,13 @@ class Versions:
         package_data["name"] = self.__name
         return package_data
 
-def get_versions(package, registry):
+def get_versions(package, registry) -> Versions:
     versions_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages/{package}/versions?per_page=100"
     session = EcosystemsSession(versions_url)
 
     return Versions(session, package, registry)
 
-def get_packages(registry, latest_date = "1979-01-01"):
+def get_packages(registry, latest_date = "1979-01-01") -> Packages:
 
     latest_date = urllib.parse.quote(latest_date)
     registry_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages?updated_after={latest_date}&per_page=100&sort=updated_at&order=asc"

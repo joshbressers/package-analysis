@@ -13,7 +13,7 @@ es = package_analysis.Elasticsearch.PackageAnalysisES()
 version_q = queue.Queue(maxsize=1000)
 lock = threading.Lock()
 
-def cmd_repos():
+def cmd_repos() -> None:
     """
     List all the repos that are currently seen in Ecosyste.ms
     """
@@ -27,7 +27,7 @@ def cmd_repos():
     print(tabulate(table_data, headers=["Repo", "Count"]))
 
 
-def cmd_latest():
+def cmd_latest() -> None:
     """
     Print the latest pcakge date stored in Elasticsearch for a given registry
     """
@@ -41,7 +41,7 @@ def cmd_latest():
     date = es.get_latest_package(registry)
     print(date)
 
-def cmd_packages():
+def cmd_packages() -> None:
     """
     Load the packages for a given repo
 
@@ -58,7 +58,7 @@ def cmd_packages():
     registry = args.registry
     load_packages(registry)
 
-def cmd_all_packages():
+def cmd_all_packages() -> None:
     "Loop over all registries and load the packages"
 
     for i in range(20):
@@ -68,12 +68,13 @@ def cmd_all_packages():
 
     for i in repos:
         registry = i["name"]
-        print(registry)
+        date = es.get_latest_package(registry)
+        print(f"{registry} - {date}")
         load_packages(registry)
 
-def load_packages(registry):
+def load_packages(registry) -> None:
     """
-    Load the packages from a given registry
+    Helper function to load the packages from a given registry
 
     we start at the latest date.
 
@@ -100,7 +101,7 @@ def load_packages(registry):
     print("Finishing up")
     es.done()
 
-def version_worker():
+def version_worker() -> None:
     """
     This is the thread worker
     """
@@ -109,16 +110,20 @@ def version_worker():
 
         (package, registry) = version_q.get()
         package_name = package["name"]
-        for p in package_analysis.Ecosystems.get_versions(package_name, registry):
-            lock.acquire()
-            es.add_version(p)
-            lock.release()
+        try:
+            for p in package_analysis.Ecosystems.get_versions(package_name, registry):
+                lock.acquire()
+                es.add_version(p)
+                lock.release()
 
-        # Only add the package data after the version data is added. This
-        # avoids a situation where we've added package data but not version
-        # data
-        lock.acquire()
-        es.add_package(package)
-        lock.release()
+            # Only add the package data after the version data is added. This
+            # avoids a situation where we've added package data but not version
+            # data
+            lock.acquire()
+            es.add_package(package)
+            lock.release()
+        except:
+            # Sometimes things go wrong, just put the package back in the queue
+            version_q.put((package, registry))
 
         version_q.task_done()

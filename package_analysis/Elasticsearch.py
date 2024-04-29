@@ -2,14 +2,16 @@
 from esbulkstream import Documents
 import logging
 
-
 class PackageAnalysisES:
+    """
+    Class for handling retreiving and storing data to Elasticsearch
+    """
 
     def __init__(self):
         self.package_es = Documents('patest-ecosystems-packages', mapping='', delete=False)
         self.versions_es = Documents('patest-ecosystems-versions', mapping='', delete=False)
 
-    def get_latest_package(self, registry):
+    def get_latest_package(self, registry) -> str:
         es_handle = self.package_es.es
 
         try:
@@ -26,7 +28,7 @@ class PackageAnalysisES:
         else:
             return "1979-01-01"
 
-    def add_package(self, package):
+    def add_package(self, package) -> None:
         doc_id = "%s-%s" % (package["repo"], package["name"])
         error = None
         try:
@@ -36,7 +38,7 @@ class PackageAnalysisES:
             logging.warn(e)
             logging.warn(error)
 
-    def add_version(self, version):
+    def add_version(self, version) -> None:
         doc_id = "%s-%s-%s" % (version["repo"], version["name"], version["number"])
         error = None
         try:
@@ -46,6 +48,6 @@ class PackageAnalysisES:
             logging.warn(e)
             logging.warn(error)
 
-    def done(self):
+    def done(self) -> None:
         self.package_es.done()
         self.versions_es.done()
