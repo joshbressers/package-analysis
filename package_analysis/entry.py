@@ -60,6 +60,10 @@ def cmd_packages() -> None:
 
 def cmd_all_packages() -> None:
     "Loop over all registries and load the packages"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--date", help="use a differnt date",
+        type=str, default=None)
+    args = parser.parse_args()
 
     for i in range(20):
         threading.Thread(target=version_worker, args=(), daemon=True).start()
@@ -70,9 +74,44 @@ def cmd_all_packages() -> None:
         registry = i["name"]
         date = es.get_latest_package(registry)
         print(f"{registry} - {date}")
-        load_packages(registry)
+        load_packages(registry, args.date)
 
-def load_packages(registry) -> None:
+def cmd_package_diff() -> None:
+    """
+    Return the different in packages stored in Elasticsearch and
+    Ecosyste.ms
+    """
+
+    for i in range(20):
+        threading.Thread(target=version_worker, args=(), daemon=True).start()
+
+    repos = package_analysis.Ecosystems.get_registries()
+
+    for r in repos:
+
+        registry = r["name"]
+        print(f"Loading Elasticsearch packages for {registry}")
+        es_packages = es.get_names(registry)
+        print("Done\n")
+        ec_packages = package_analysis.Ecosystems.get_names(registry)
+
+        count = 0
+        for i in ec_packages:
+            count = count + 1
+            if not count % 10000:
+                print(count)
+            if i not in es_packages:
+                one_package = package_analysis.Ecosystems.get_package(registry, i)
+                version_q.put([one_package, registry])
+                print(f"{i} {count}")
+
+        while not version_q.empty():
+            time.sleep(10)
+
+        print("Finishing up")
+        es.done()
+
+def load_packages(registry, date) -> None:
     """
     Helper function to load the packages from a given registry
 
@@ -81,7 +120,10 @@ def load_packages(registry) -> None:
     TODO: Start at 1970-01-01 to load them all
     """
 
-    latest_date = es.get_latest_package(registry)
+    if date is None:
+        latest_date = es.get_latest_package(registry)
+    else:
+        latest_date = date
     packages = package_analysis.Ecosystems.get_packages(registry, latest_date)
 
     total_packages = packages.get_count()

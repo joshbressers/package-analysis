@@ -28,6 +28,54 @@ class PackageAnalysisES:
         else:
             return "1979-01-01"
 
+    def get_names(self, registry) -> set:
+
+        package_names = set()
+
+        es_handle = self.package_es.es
+        page = ''
+
+        while True:
+
+            data = es_handle.search(index="patest-ecosystems-packages",
+                body={
+                    "query": {
+                        "bool" : {
+                            "must" : {
+                                "term" : {
+                                    "repo.keyword" : registry
+                                }
+                            }
+                        }
+                    },
+                    "sort" : [
+                        {"name.keyword" : "asc"}
+                    ],
+                    "search_after" : [ page ],
+                    "fields" : [ "name", "repo" ],
+                    "size": 1000,
+                    "_source": False
+                }
+            )
+
+            if len(data["hits"]["hits"]) == 0:
+                break
+
+            for i in data["hits"]["hits"]:
+                names = i["fields"]["name"]
+                if len(names) > 1:
+                    raise Exception("Too many names")
+                package_names.add(names[0])
+
+                sort = i["sort"]
+                if len(sort) > 1:
+                    raise Exception("Too many sorts")
+                page = i["sort"][0]
+
+            print(len(package_names))
+
+        return package_names
+
     def add_package(self, package) -> None:
         doc_id = "%s-%s" % (package["repo"], package["name"])
         error = None

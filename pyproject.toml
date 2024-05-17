@@ -17,6 +17,7 @@ pa-repos = "package_analysis.entry:cmd_repos"
 pa-packages = "package_analysis.entry:cmd_packages"
 pa-latest = "package_analysis.entry:cmd_latest"
 pa-all = "package_analysis.entry:cmd_all_packages"
+pa-diff = "package_analysis.entry:cmd_package_diff"
 
 [build-system]
 requires = ["poetry-core"]

@@ -42,7 +42,7 @@ class EcosystemsSession:
         return self.__total_count
 
     def get_url(self) -> None:
-        self.__response = self.session.get(url=self.__url)
+        self.__response = self.session.get(url=self.__url, timeout=60)
 
         self.__page_items = int(self.__response.headers['page-items'])
         self.__data = self.__response.json()
@@ -122,7 +122,10 @@ class Packages:
     def __next__(self):
         package_data = next(self.__session_iter)
         package_data["repo"] = self.__registry
-        package_data["num_maintainers"] = len(package_data["maintainers"])
+        if "maintainers" in package_data:
+            package_data["num_maintainers"] = len(package_data["maintainers"])
+        else:
+            package_data["num_maintainers"] = 0
 
 
         # Remove some large fields
@@ -150,6 +153,21 @@ class Versions:
         package_data["name"] = self.__name
         return package_data
 
+class Names:
+
+    def __init__(self, session, registry):
+        self.__session = session
+        self.__registry = registry
+
+        self.__session_iter = iter(self.__session)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        name_data = next(self.__session_iter)
+        return name_data
+
 def get_versions(package, registry) -> Versions:
     versions_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages/{package}/versions?per_page=100"
     session = EcosystemsSession(versions_url)
@@ -164,3 +182,36 @@ def get_packages(registry, latest_date = "1979-01-01") -> Packages:
     session = EcosystemsSession(registry_url)
 
     return Packages(session, registry)
+
+def get_names(registry) -> Names:
+
+    names_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/package_names?per_page=1000"
+    session = EcosystemsSession(names_url)
+
+    return Names(session, registry)
+
+def get_package(registry, package) -> dict:
+
+    quote_name = urllib.parse.quote(package)
+    package_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages/{quote_name}"
+
+    session = requests.Session()
+    retries = Retry(total=10,
+                    backoff_factor=1,
+                    status_forcelist=[ 500, 502, 503, 504 ])
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    response = session.get(url=package_url)
+    package_data = response.json()
+
+    package_data["repo"] = registry
+    if "maintainers" in package_data:
+        package_data["num_maintainers"] = len(package_data["maintainers"])
+    else:
+        package_data["num_maintainers"] = 0
+
+    # Remove some large fields
+    if "metadata" in package_data: del(package_data["metadata"])
+    if "repo_metadata" in package_data: del(package_data["repo_metadata"])
+    if "fields" in package_data: del(package_data["fields"])
+
+    return package_data
