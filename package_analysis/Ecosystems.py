@@ -42,6 +42,7 @@ class EcosystemsSession:
         return self.__total_count
 
     def get_url(self) -> None:
+
         self.__response = self.session.get(url=self.__url, timeout=60)
 
         self.__page_items = int(self.__response.headers['page-items'])
@@ -169,7 +170,8 @@ class Names:
         return name_data
 
 def get_versions(package, registry) -> Versions:
-    versions_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages/{package}/versions?per_page=100"
+    quote_package = urllib.parse.quote(package)
+    versions_url = f"https://packages.ecosyste.ms/api/v1/registries/{registry}/packages/{quote_package}/versions?per_page=100"
     session = EcosystemsSession(versions_url)
 
     return Versions(session, package, registry)

@@ -56,7 +56,9 @@ def cmd_packages() -> None:
         threading.Thread(target=version_worker, args=(), daemon=True).start()
 
     registry = args.registry
-    load_packages(registry)
+    date = es.get_latest_package(registry)
+    print(f"{registry} - {date}")
+    load_packages(registry, None)
 
 def cmd_all_packages() -> None:
     "Loop over all registries and load the packages"
@@ -82,32 +84,66 @@ def cmd_package_diff() -> None:
     Ecosyste.ms
     """
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("registry", type=str, default=None, nargs='?',
+        help="The registry to diff")
+    args = parser.parse_args()
+    registry = args.registry
+
     for i in range(20):
         threading.Thread(target=version_worker, args=(), daemon=True).start()
 
     repos = package_analysis.Ecosystems.get_registries()
+    new_repos = repos
+    if registry is not None:
+        new_repos = []
+        for i in repos:
+            if i["name"] == registry:
+                new_repos.append(i)
+                break
+
+    if registry is not None and len(new_repos) == 0:
+        raise Exception("Repo not found")
+    else:
+        repos = new_repos
 
     for r in repos:
 
         registry = r["name"]
         print(f"Loading Elasticsearch packages for {registry}")
         es_packages = es.get_names(registry)
-        print("Done\n")
+        print(f"Done with {registry}\n")
         ec_packages = package_analysis.Ecosystems.get_names(registry)
 
         count = 0
+        progress = tqdm(total=len(es_packages), ncols=70)
         for i in ec_packages:
             count = count + 1
-            if not count % 10000:
-                print(count)
+            progress.n = count
+            progress.refresh()
             if i not in es_packages:
-                one_package = package_analysis.Ecosystems.get_package(registry, i)
+                try:
+                    one_package = package_analysis.Ecosystems.get_package(registry, i)
+                except Exception as e:
+                    print(f"Error parsing {i}")
+                    continue
+
+                # We only want to add things older than the newest package
+                # in our repo
+                latest = es.get_latest_package(registry)
+                if "create_at" not in one_package:
+                    continue
+
+                if latest < one_package['created_at']:
+                    continue
+
                 version_q.put([one_package, registry])
                 print(f"{i} {count}")
 
         while not version_q.empty():
             time.sleep(10)
 
+        progress.close()
         print("Finishing up")
         es.done()
 
@@ -151,6 +187,14 @@ def version_worker() -> None:
     while True:
 
         (package, registry) = version_q.get()
+
+        if "name" not in package:
+            # There are some pretty gnarly packages sometimes
+            # We're just going to skip things without a name
+            print(package)
+            version_q.task_done()
+            continue
+
         package_name = package["name"]
         try:
             for p in package_analysis.Ecosystems.get_versions(package_name, registry):

@@ -72,8 +72,6 @@ class PackageAnalysisES:
                     raise Exception("Too many sorts")
                 page = i["sort"][0]
 
-            print(len(package_names))
-
         return package_names
 
     def add_package(self, package) -> None:
