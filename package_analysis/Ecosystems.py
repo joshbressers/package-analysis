@@ -4,6 +4,7 @@ import requests
 import urllib.parse
 from requests.adapters import HTTPAdapter, Retry
 from typing import List
+import sys
 
 
 class EcosystemsSession:
@@ -32,7 +33,7 @@ class EcosystemsSession:
         self.session = requests.Session()
         retries = Retry(total=10,
                         backoff_factor=1,
-                        status_forcelist=[ 500, 502, 503, 504 ])
+                        status_forcelist=[ 500, 502, 503, 504, 520 ])
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
         self.get_url()
